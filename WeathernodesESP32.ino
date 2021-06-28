@@ -1,9 +1,3 @@
-
-
-
-
-
-
 /////////////////////// ArduinoJson Setup
 
 #define ARDUINOJSON_ENABLE_STD_STREAM 0
@@ -23,12 +17,12 @@
 
 
 /////////////////////// Node Config Hostname
-const char* espName = "ESPxTest";
-const char* mqtt_clientId = "ESPxTest";
+const char* espName = "ESPxTest";  //set your hostname  
+const char* mqtt_clientId = "ESPxTest"; //set your hostname
 
 // Available Topics for mqtt
 
-const char* topic_data = "/data/nodes";
+const char* topic_data = "/data/nodes"; //set your mqtt topic
 
 
 /////////////////////// Sensor Setup
@@ -70,7 +64,7 @@ float humibme(NAN);
 
 
 /**
- * Le Setup
+ * ESP32 Setup
  */
 void setup() {
     Serial.begin(SERIAL_BAUD);
@@ -90,7 +84,7 @@ void setup() {
     startWIFI();
 
 }
-
+// Setup Deepsleep
 void setupdeepsleep() {
 
     esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_mS_FACTOR * mS_TO_S_FACTOR * M_TO_S_FACTOR); //enable Timer Wakeup with conversion from minutes to u seconds
@@ -203,13 +197,13 @@ void getSensorData() {
     Serial.println("---");
     Serial.print("Temperature DHT = ");
     Serial.print(tempdht);
-    Serial.println(" °C");
+    Serial.println(" Â°C");
     Serial.print("Humidity DHT = ");
     Serial.print(humidht);
     Serial.println(" %");
     Serial.print("Temperature BME = ");
     Serial.print(tempbme);
-    Serial.println(" °C");
+    Serial.println(" Â°C");
     Serial.print("Pressure BME = ");
     Serial.print(presbme);
     Serial.println(" hPa");
@@ -355,6 +349,8 @@ void goToBed(int minutes) {
     delay(100);
 #endif
 }
+
+// show reasons for deep sleep wake up on startup
 void print_wakeup_reason() {
     esp_sleep_wakeup_cause_t wakeup_reason;
 
@@ -372,7 +368,7 @@ void print_wakeup_reason() {
 }
 
 /**
- * Dump some information on startup.
+ * show some informations
  */
 void splashScreen() {
     for (int i = 0; i <= 5; i++) Serial.println();
@@ -389,7 +385,7 @@ void splashScreen() {
 }
 
 /**
- * Looping Louie
+ * loop runs only once, main programm here
  */
 void loop() {
     runMQTT();
