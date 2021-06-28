@@ -52,7 +52,7 @@ PubSubClient client(wifiClient);
 #define uS_TO_mS_FACTOR 1000  /* Conversion factor for micro seconds to miliseconds */
 #define mS_TO_S_FACTOR 1000  /* Conversion factor for milliseconds to seconds */
 #define M_TO_S_FACTOR 60  /* Conversion factor for seconds to minutes */
-#define TIME_TO_SLEEP  1        /* Time ESP32 will go to sleep (in minutes) */
+#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in minutes) */
 
 // Variables for Sensor Data
 
