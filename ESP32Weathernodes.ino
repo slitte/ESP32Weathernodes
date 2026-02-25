@@ -1,4 +1,4 @@
-/////////////////////// ArduinoJson Setup
+///////////////////// ArduinoJson Setup
 
 #define ARDUINOJSON_ENABLE_STD_STREAM 0
 #define ARDUINOJSON_ENABLE_STD_STRING 1
@@ -9,32 +9,22 @@
 #include <Adafruit_BME280.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <DHT.h>
 #include <ArduinoJson.h>
 #include <Wire.h>
-#include "settings.h"
+#include <HomeWiFiServerSettings.h>
 #include <Adafruit_Sensor.h>
 
 
 /////////////////////// Node Config Hostname
-const char* espName = "ESPxTest";  //set your hostname  
-const char* mqtt_clientId = "ESPxTest"; //set your hostname
+const char* espName = "ESP5";
+const char* mqtt_clientId = "ESP5";
 
 // Available Topics for mqtt
 
-const char* topic_data = "/data/nodes"; //set your mqtt topic
+const char* topic_data = "/data/nodes";
 
 
 /////////////////////// Sensor Setup
-
-#define DHTPIN 19     // Digital pin connected to the DHT sensor 
-
-// Uncomment the type of sensor in use:
-//#define DHTTYPE    DHT11     // DHT 11
-//#define DHTTYPE    DHT22     // DHT 22 (AM2302)
-#define DHTTYPE    DHT21     // DHT 21 (AM2301)
-
-DHT dht(DHTPIN, DHTTYPE);
 
 
 Adafruit_BME280 bme; // I2C
@@ -56,35 +46,45 @@ PubSubClient client(wifiClient);
 
 // Variables for Sensor Data
 
-float tempdht(NAN);
-float humidht(NAN);
-float presbme(NAN);
-float tempbme(NAN);
-float humibme(NAN);
+double batvoltvin(NAN);
+double batvoltout(NAN);
+double presbme(NAN);
+double tempbme(NAN);
+double humibme(NAN);
+int rnd(NAN);
 
+
+// Pin for Analoge Voltage
+
+const int batvoltpin = 33;
 
 /**
- * ESP32 Setup
+ * Le Setup
  */
 void setup() {
     Serial.begin(SERIAL_BAUD);
     print_wakeup_reason(); // Reason for ESP to Wake UP
     setupdeepsleep(); // Setup for Deepsleep
     Wire.begin();
-    pinMode(DHTPIN, INPUT);
-    dht.begin();
     if (!bme.begin(0x76)) {
         Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
         while (1);
     }
+    Serial.println("Measuring Battery Voltage");
+    // Reading Battery Voltage value
+    batvoltout = (double)analogRead(batvoltpin);
 
+    batvoltvin = batvoltout / 4095.0 * 3.3 * (127000.0 / 100000.0);
+    delay(500);
+
+    Serial.println("");
     splashScreen();
     delay(2000); //reprogramming
 
     startWIFI();
 
 }
-// Setup Deepsleep
+
 void setupdeepsleep() {
 
     esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_mS_FACTOR * mS_TO_S_FACTOR * M_TO_S_FACTOR); //enable Timer Wakeup with conversion from minutes to u seconds
@@ -101,40 +101,10 @@ void getSensorData() {
 
     Serial.println("---");
     Serial.println("");
-    Serial.println("Measuring Temperature DHT");
-    int tryCnttd = 0;
-    while (isnan(tempdht)) {
-        delay(2500);
-        tempdht = dht.readTemperature(); // Gets the values of the temperature
-        Serial.print(".");
-        tryCnttd++;
-
-        if (tryCnttd > 5) {
-            Serial.println("");
-            Serial.println("Could not read Temperature.");
-            goToBed(5);
-        }
-
-    }
-    Serial.println("");
 
 
-    Serial.println("Measuring Humidity DHT");
 
-    int tryCnthd = 0;
-    while (isnan(humidht)) {
-        delay(2500);
-        humidht = dht.readHumidity(); // Gets the values of the humidity 
-        Serial.print(".");
-        tryCnthd++;
 
-        if (tryCnthd > 5) {
-            Serial.println("");
-            Serial.println("Could not read Humidity.");
-            goToBed(5);
-        }
-
-    }
     Serial.println("");
     Serial.println("Measuring Temperature BME");
 
@@ -194,22 +164,21 @@ void getSensorData() {
     Serial.println("");
 
 
+
     Serial.println("---");
-    Serial.print("Temperature DHT = ");
-    Serial.print(tempdht);
-    Serial.println(" °C");
-    Serial.print("Humidity DHT = ");
-    Serial.print(humidht);
-    Serial.println(" %");
+
     Serial.print("Temperature BME = ");
     Serial.print(tempbme);
-    Serial.println(" °C");
+    Serial.println(" C");
     Serial.print("Pressure BME = ");
     Serial.print(presbme);
     Serial.println(" hPa");
     Serial.print("Humidity BME = ");
     Serial.print(humibme);
     Serial.println(" %");
+    Serial.print("Battery Voltage = ");
+    Serial.print(batvoltvin);
+    Serial.println(" V");
     Serial.println("---");
 
 
@@ -222,37 +191,39 @@ void sendtomqtt() {
     Serial.println("Sending Sensordata to MQTT");
 
 
-    tempdht = tempdht * 100;
-    tempdht = roundf(tempdht);
-    tempdht = tempdht / 100;
 
-    humidht = humidht * 100;
-    humidht = roundf(humidht);
-    humidht = humidht / 100;
 
-    tempbme = tempbme * 100;
-    tempbme = roundf(tempbme);
+
+    rnd = round(tempbme * 100);
+    tempbme = double(rnd);
     tempbme = tempbme / 100;
+    rnd = (NAN);
 
-
-    presbme = presbme * 100;
-    presbme = roundf(presbme);
+    rnd = round(presbme * 100);
+    presbme = double(rnd);
     presbme = presbme / 100;
+    rnd = (NAN);
 
-
-    humibme = humibme * 100;
-    humibme = roundf(humibme);
+    rnd = round(humibme * 100);
+    humibme = double(rnd);
     humibme = humibme / 100;
+    rnd = (NAN);
+
+    rnd = round(batvoltvin * 100);
+    batvoltvin = double(rnd);
+    batvoltvin = batvoltvin / 100;
+    rnd = (NAN);
+
 
 
     DynamicJsonDocument doc(200);
 
     doc["ESPName"] = espName;
-    doc["tempdht"] = tempdht;
-    doc["humidht"] = humidht;
     doc["tempbme"] = tempbme;
     doc["presbme"] = presbme;
     doc["humibme"] = humibme;
+    doc["batvoltvin"] = batvoltvin;
+
 
 
     serializeJson(doc, Serial);
@@ -349,8 +320,6 @@ void goToBed(int minutes) {
     delay(100);
 #endif
 }
-
-// show reasons for deep sleep wake up on startup
 void print_wakeup_reason() {
     esp_sleep_wakeup_cause_t wakeup_reason;
 
@@ -368,7 +337,7 @@ void print_wakeup_reason() {
 }
 
 /**
- * show some informations
+ * Dump some information on startup.
  */
 void splashScreen() {
     for (int i = 0; i <= 5; i++) Serial.println();
@@ -384,8 +353,22 @@ void splashScreen() {
     for (int i = 0; i < 2; i++) Serial.println();
 }
 
+/// Disconnect WiFi
+void wifidisconnect() {
+    WiFi.disconnect();
+
+}
+
+/// Disconnect MQTT
+
+void mqttdisconnect() {
+    client.disconnect();
+
+}
+
+
 /**
- * loop runs only once, main programm here
+ * Looping Louie
  */
 void loop() {
     runMQTT();
@@ -393,5 +376,10 @@ void loop() {
     sendtomqtt();
 
     delay(500); //wait
+    mqttdisconnect();
+    delay(500);
+    wifidisconnect();
+    delay(500);
+
     goToBed(TIME_TO_SLEEP); //sending into deep sleep
 }
